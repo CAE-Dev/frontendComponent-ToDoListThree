@@ -30,7 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-var client;
+var client, dataStorage;//, dataStorage = [];
 
 var init = function() {
   
@@ -39,7 +39,7 @@ var init = function() {
     console.log(intent);
   };
   
-  client = new Las2peerWidgetLibrary("gaudi.informatik.rwth-aachen.de:8087", iwcCallback);
+  client = new Las2peerWidgetLibrary("http://localhost:8080/ToDoList", iwcCallback);
   
 Y({
   db: {
@@ -51,24 +51,27 @@ Y({
   },
   sourceDir: "http://y-js.org/bower_components",
   share: {
+    inputData:'Text',
     dataList:'Text',
-inputData:'Text'
+    dataStorage: 'Array'
   }
 }).then(function (y) {
   window.yTextarea = y
 
-  y.share.dataList.bind(document.getElementById('dataList'))
-y.share.inputData.bind(document.getElementById('inputData'))
-
+  y.share.inputData.bind(document.getElementById('inputData'))
+y.share.dataList.bind(document.getElementById('dataList'))
+ dataStorage = y.share.dataStorage
 })
 
+//dataStorage = y.share.map.set('array', Y.Array)
 
-
-  $('#AddButton').on('click', function() {
-    AddEntry();
-  })
   $('#ShowButton').on('click', function() {
     ShowEntries();
+  })
+  $('#AddButton').on('click', function() {
+
+  console.log("listContent")
+    AddEntry();
   })
   $('#DeleteButton').on('click', function() {
     DeleteEntry();
@@ -76,22 +79,102 @@ y.share.inputData.bind(document.getElementById('inputData'))
 }
 
 
-// AddEntry
-var AddEntry = function(){
-  $("#inputData").html("Upated Element");
-  $("#messageStatus").html("Upated Element");
+// DeleteEntry
+var DeleteEntry = function(){
+  deleteMessageFunction();
 }
 
 
 // ShowEntries
 var ShowEntries = function(){
-  $("#dataList").html("Upated Element");
+  reloadData();
+  $("#messageStatus").val("Data fetched!");
 }
 
 
-// DeleteEntry
-var DeleteEntry = function(){
-  $("#messageStatus").html("Upated Element");
+// AddEntry
+var AddEntry = function(){
+  var listContent = $("#inputData").val();
+  console.log(listContent)
+  var temp = [];
+  temp.push(listContent)
+  sendMessageFunction(temp);
+}
+
+var reloadData = function(){
+console.log(dataStorage.toArray())
+  $("#messageStatus").val("Get Data");
+  var DataContent = null;
+  var textData = "";
+  for(var i = 0;i < dataStorage.toArray().length;i++){
+    textData += (i+1)+": "+dataStorage.toArray()[i]+"\n";
+  }
+
+  $('#dataList').attr("rows", dataStorage.toArray().length);
+    $("#dataList").val(textData);
+    $("#messageStatus").val("");
+}
+
+// responseAction
+var responseAction = function(data){
+  console.log(data);
+  var dataJSON = JSON.parse(data);
+  if(data){
+    reloadData(dataJSON.list);    
+  }else{
+    $("#messageStatus").val("No data found!");
+  }
+
+}
+
+var sendMessageFunction = function(contentData){
+  dataStorage.push(contentData);
+  $("#messageStatus").val(contentData + " is added! Click show button!");
+}
+
+function isInteger(x) {
+    return x % 1 === 0;
+}
+
+var deleteMessageFunction = function(){
+  var index = parseInt($("#inputData").val());
+  console.log(isInteger(index));
+  var isInt = isInteger(index);
+  if (isInt) {
+    console.log("True");
+    if(dataStorage.toArray().length==0){
+      $("#messageStatus").val("No data found!");
+      console.log("Empty entries");
+    }
+    else{
+        if(index > 0 || index <= dataStorage.toArray().length){
+          var dataName = dataStorage.toArray()[index-1];
+          dataStorage.delete(index-1,1);
+          $("#messageStatus").val(dataName + " is removed! Click show button!");
+        }
+        else{
+          console.log("Index not found");
+          $("#messageStatus").val("Invalid input data!");
+        }    
+    }
+  }
+  else{
+
+    var dataInput = $("#inputData").val();
+    var idx = dataStorage.toArray().indexOf(dataInput);
+    if(idx < 0){
+          $("#messageStatus").val("Invalid input data!");      
+    }
+    else{
+          var dataName = dataStorage.toArray()[idx];
+          dataStorage.delete(idx,1);
+          $("#messageStatus").val(dataName + " is removed! Click show button!");
+
+
+    }
+  }  
+ 
+
 }
 
 
